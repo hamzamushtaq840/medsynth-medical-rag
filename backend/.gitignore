@@ -1,0 +1,7 @@
+vector_db
+.python-version
+.venv
+__pycache__
+pyproject.toml
+uv.lock
+.env

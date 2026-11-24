@@ -1,0 +1,11 @@
+services:
+  backend:
+    build: .
+    container_name: rag_chat_backend
+    ports:
+      - "7860:7860"
+    env_file:
+      - .env
+    volumes:
+      - ./vector_db:/app/vector_db
+    restart: unless-stopped
