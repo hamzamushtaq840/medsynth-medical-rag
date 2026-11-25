@@ -1,6 +1,6 @@
 # MedSynth — Clinical RAG Medical Assistant
 
-MedSynth is an end-to-end Retrieval-Augmented Generation (RAG) system designed for clinical question answering. It grounds **Google Gemini 2.5 Flash** responses in 10,178 USMLE-style clinical cases from the [MedQA (`medical_meadow_medqa`)](https://huggingface.co/datasets/medalpaca/medical_meadow_medqa) dataset using a two-stage hybrid retrieval and cross-encoder reranking pipeline. The full evaluation notebook is available in the `backend/rag_embeddings.ipynb`.
+MedSynth is an end-to-end Retrieval-Augmented Generation (RAG) system designed for clinical question answering. It grounds **Google Gemini 2.5 Flash** responses in 10,178 USMLE-style clinical cases from the [MedQA (`medical_meadow_medqa`)](https://huggingface.co/datasets/medalpaca/medical_meadow_medqa) dataset using a two-stage hybrid retrieval and cross-encoder reranking pipeline. The full evaluation notebook is available in [`backend/rag_embeddings.ipynb`](backend/rag_embeddings.ipynb).
 
 ---
 
