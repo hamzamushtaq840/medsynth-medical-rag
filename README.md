@@ -1,61 +1,72 @@
-# MedSynth - AI Medical Assistant 🩺
+# MedSynth — Clinical RAG Medical Assistant
 
-Hey there! This is a professional-grade Medical RAG (Retrieval-Augmented Generation) system. Think of it as a clinical pharmacist consultant in your pocket! It uses the MedQA dataset from [Huggingface](https://huggingface.co/datasets/medalpaca/medical_meadow_medqa) and Google's Gemini 2.5 Flash to give you solid, evidence-based answers to tricky medical questions.
+MedSynth is an end-to-end Retrieval-Augmented Generation (RAG) system designed for clinical question answering. It grounds **Google Gemini 2.5 Flash** responses in 10,178 USMLE-style clinical cases from the [MedQA (`medical_meadow_medqa`)](https://huggingface.co/datasets/medalpaca/medical_meadow_medqa) dataset using a two-stage hybrid retrieval and cross-encoder reranking pipeline. The full evaluation notebook is available in the `bge_ranker/rag_embeddings.ipynb`.
 
-## 🚀 What can it do?
+---
 
-- **Real-time Streaming**: No waiting around! It uses Server-Sent Events (SSE) to stream answers from Gemini 2.5 Flash as they happen.
-- **Smart Medical RAG**: I've grounded the AI in the medical_meadow_medqa dataset. This helps it stay on track and keeps things clinically accurate.
-- **Quick Vector Search**: I'm using ChromaDB and HuggingFace Embeddings to find exactly what you're looking for, fast!
-- **Easy-to-use UI**: The dashboard is clean and snappy! It's built with Next.js 16, Tailwind CSS, and FastAPI.
+## Architecture & Key Features
 
-## 🛠️ How it's built
+- **Two-Stage Hybrid Retrieval (`bge_ranker`)**:
+  - **Stage 1 (Candidate Generation)**: Combines dense semantic vector search (`BAAI/bge-small-en-v1.5` in ChromaDB with asymmetric query prefixing) and sparse lexical retrieval (`BM25`) via LangChain's `EnsembleRetriever` (`0.6 / 0.4` weighting) to capture both clinical semantics and exact medical terminology.
+  - **Stage 2 (Cross-Encoder Reranking)**: Refines the top candidates down to the top 5 most relevant clinical cases using `BAAI/bge-reranker-large`.
+- **Clinical Preprocessing**: Strips multiple-choice option distractors (`A`–`E`) and option letter prefixes prior to indexing so retrieval matches natural clinical vignettes rather than exam formatting.
+- **Real-Time Streaming Inference**: Streams grounded responses from Gemini 2.5 Flash over Server-Sent Events (SSE) with persistent SQLite session history.
+- **Full-Stack Web Interface**: Built with a FastAPI backend and a Next.js 16 (App Router) + Tailwind CSS frontend.
 
-### The Backend (Python)
+---
 
-- **Framework**: FastAPI
-- **The Brains**: Google Gemini 2.5 Flash
-- **The Logic**: LangChain
-- **The Library**: ChromaDB
-- **Embeddings**: HuggingFace (all-MiniLM-L6-v2) as well (BAAI/bge-small-en-v1.5) inside `bge_ranker` folder
+## Tech Stack
 
-### The Frontend (Next.js)
+### Backend (Python)
+
+- **API Framework**: FastAPI
+- **Orchestration**: LangChain (`EnsembleRetriever`, `ContextualCompressionRetriever`)
+- **LLM**: Google Gemini 2.5 Flash (via OpenAI-compatible endpoint)
+- **Vector Store**: ChromaDB
+- **Retrieval & Reranking Models**: `BAAI/bge-small-en-v1.5`, `BAAI/bge-reranker-large`, `rank_bm25`
+- **Session Storage**: SQLite
+
+### Frontend (TypeScript / React)
 
 - **Framework**: Next.js 16 (App Router)
 - **Styling**: Tailwind CSS
-- **State**: React Hooks
-- **Streaming**: We use the native fetch API to handle those live text streams.
+- **State & Streaming**: React Hooks + native Fetch SSE stream reader
 
-## 📋 What you'll need
+---
 
-- Python 3.12 or newer
-- Node.js 18 or newer
-- A LLM AI API Key for Gemini
+## Prerequisites
 
-## 🔧 Getting it running
+- Python 3.12+
+- Node.js 18+
+- A valid Gemini API key
+- Optional: CUDA-capable GPU for faster embedding and cross-encoder inference (defaults to CPU in Docker)
 
-### 1. Set up the Backend
+---
 
-Grab the code:
+## Getting Started
 
+### 1. Backend Setup
+
+Clone the repository and navigate to the backend directory:
+
+```bash
+git clone <your-repo-url>
+cd langchain-medical-assistant/backend
 ```
-git clone langchain-medical-assistant/
-cd ai-medical-assistant/backend
-```
 
-Install the tools:
+Install Python dependencies using `uv`:
 
-```
+```bash
 uv sync
 ```
 
-Set your API keys:
+Create a `.env` file in `backend/` with the following configuration:
 
-```
+```env
 LLM_API_KEY=your-google-api-key-here
 LLM_BASE_URL=https://generativelanguage.googleapis.com/v1beta/openai/
 LLM_MODEL=gemini-2.5-flash
-SYSTEM_PROMPT=You are a helpful medical assistant. Use the context to answer. Be concise.
+SYSTEM_PROMPT=You are a helpful medical assistant. Use the retrieved clinical context to answer concisely and accurately.
 CHAT_DB=/app/chat_history.db
 HISTORY_WINDOW=6
 RETRIEVAL_K=5
@@ -63,55 +74,52 @@ EMBED_MODEL=BAAI/bge-small-en-v1.5
 EMBED_DEVICE=cpu
 ```
 
-Fire it up:
+Launch the backend service via Docker Compose:
 
-```
+```bash
 docker compose up
 ```
 
-You'll find the API hanging out at `http://localhost:7860`.
+The FastAPI server will be available at `http://localhost:7860`.
 
-### 2. Set up the Frontend
+### 2. Frontend Setup
 
-Head over to the frontend folder:
+In a separate terminal, navigate to the frontend directory, install dependencies, and start the development server:
 
-```
+```bash
 cd ../frontend
-```
-
-Install everything:
-
-```
 npm install
-```
-
-Start the dev server:
-
-```
 npm run dev
 ```
 
-Go to `http://localhost:3000` and you're good to go!
+Open `http://localhost:3000` in your browser.
 
-## 🔌 API Details
+---
 
-| Method | Where to go         | What it does                      |
-| ------ | ------------------- | --------------------------------- |
-| POST   | /                   | Returns the status of backend     |
-| POST   | /chat               | Gives you a standard JSON answer. |
-| POST   | /chat {stream:true} | Streams the answer live!          |
-| POST   | /history/session_id | Returns the chat history          |
-| POST   | /clear/session_id   | Clears the session                |
+## API Reference
 
-## 🧪 How well does it work?
+| Method | Endpoint                     | Description                                                          |
+| :----- | :--------------------------- | :------------------------------------------------------------------- |
+| `POST` | `/`                          | Health check returning backend service status                        |
+| `POST` | `/chat`                      | Generates a standard JSON response grounded in retrieved MedQA cases |
+| `POST` | `/chat` (`{"stream": true}`) | Streams the generated response token-by-token via SSE                |
+| `POST` | `/history/{session_id}`      | Retrieves conversation history for a given session                   |
+| `POST` | `/clear/{session_id}`        | Clears stored conversation history for a given session               |
 
-We've tested this RAG system using some standard metrics on the MedQA dataset, and the results are looking great!
+---
 
-- **MRR (How fast it finds the right answer)**: ~0.77
-- **Recall@5 (Did it find the answer in the top 5?)**: ~0.77
-- **nDCG@5 (Is the ranking good?)**: ~0.77
-- **Keyword Coverage**: ~0.88
+## Retrieval Evaluation
 
-## ⚠️ A quick heads-up!
+The two-stage retrieval pipeline (`BAAI/bge-small-en-v1.5` + `BM25` + `BAAI/bge-reranker-large`) was evaluated on a benchmark of 20 paraphrased clinical vignettes against the 10,178-document MedQA knowledge base (`k = 5`):
 
-This app is just for learning and research. It's definitely not a replacement for a real doctor or pharmacist. If you have health concerns, always talk to a professional!
+| Metric       |   Score    | Interpretation                                                                                              |
+| :----------- | :--------: | :---------------------------------------------------------------------------------------------------------- |
+| **Recall@5** | **0.7500** | 75% of paraphrased clinical queries retrieve the exact matching ground-truth case within the top 5 results. |
+| **MRR@5**    | **0.6417** | Mean Reciprocal Rank; relevant cases typically appear at rank 1 or rank 2.                                  |
+| **nDCG@5**   | **0.6197** | Normalized Discounted Cumulative Gain measuring ranking quality across the top 5 positions.                 |
+
+---
+
+## Disclaimer
+
+This software is developed strictly for academic research and educational purposes. It is not a certified medical device and should not be used for clinical diagnosis, treatment decisions, or as a substitute for professional medical advice.
