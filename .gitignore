@@ -1,1 +1,38 @@
-.DS_STORE
+# OS & Editor
+.DS_Store
+Thumbs.db
+.vscode/
+.idea/
+
+# Environment & Secrets
+.env
+.env.*
+!.env.example
+
+# Frontend (Next.js)
+node_modules/
+.next/
+out/
+dist/
+npm-debug.log*
+
+# Backend (Python / uv)
+__pycache__/
+*.py[cod]
+*$py.class
+.venv/
+venv/
+env/
+*.egg-info/
+.pytest_cache/
+
+# RAG Vector Stores, Archives & Local Databases
+vector_db*/
+*.zip
+*.db
+*.sqlite
+*.sqlite3
+
+# Jupyter & Model Checkpoints
+.ipynb_checkpoints/
+bge-small-medqa-retriever/
